@@ -36,33 +36,57 @@ var average = total / bikes.Count();
 Console.WriteLine($"Média: {average} aluguéis por dia");
 
 Console.WriteLine("2. A empresa parece ter crescido, ou seja, aumentado os alugueis de cicletas ao longo do tempo?");
-var averageByMonth = days.GroupBy(b => b.Date.Month).Select(g => new { Month = g.Key, Average = g.Sum(b => b.Casual + b.Registred) / g.Count() });
+var averageByMonth = bikes.GroupBy(b => b.Day / 30).Select(g => new {Mounth = g.Key, Mean = g.Average(day => day.Casual + day.Registred)});
 foreach (var item in averageByMonth)
 {
-    Console.WriteLine($"Média de aluguéis no mês {item.Month}: {item.Average}");
+    Console.WriteLine($"Média de aluguéis no mês {item.Mounth}: {item.Mean}");
 }
+Console.WriteLine();
 
 Console.WriteLine("3. Como a estação, condições de tempo e temperatura impactam nos resultados?");
-var averageBySeason = bikes.GroupBy(b => b.Season).Select(g => new { Season = g.Key, Average = g.Sum(b => b.Casual + b.Registred) / g.Count() });
+var joinBikeDay = bikes.Join(days, bike => bike.Day, day => day.Day, (bike, day) => new { BikesObj = bike, DayObj = day});
+
+var averageByTemp = joinBikeDay.GroupBy(j => j.DayObj.Temp)
+    .Select(g => new { Temp = g.Key, Quant = g.Sum(day => day.BikesObj.Casual + day.BikesObj.Registred)});
+var averageBySeason = joinBikeDay.GroupBy(j => j.DayObj.Season)
+    .Select(g => new { Season = g.Key, Quant = g.Sum(day => day.BikesObj.Casual + day.BikesObj.Registred)});
+var averageByWeather = joinBikeDay.GroupBy(j => j.DayObj.Weather)
+    .Select(g => new { Weather = g.Key, Quant = g.Sum(day => day.BikesObj.Casual + day.BikesObj.Registred)});
+
+foreach (var item in averageByTemp)
+    Console.WriteLine($"Temperatura: {item.Temp} Quantidade de aluguéis: {item.Quant}");
+Console.WriteLine();
+
 foreach (var item in averageBySeason)
-{
-    Console.WriteLine($"Média de aluguéis na estação {item.Season}: {item.Average}");
-}
+    Console.WriteLine($"Estação: {item.Season} Quantidade de aluguéis: {item.Quant}");
+Console.WriteLine();
+
+foreach (var item in averageByWeather)
+    Console.WriteLine($"Clima: {item.Weather} Quantidade de aluguéis: {item.Quant}");
+Console.WriteLine();
+
 
 Console.WriteLine("4. Qual a média de aluguel de bicicletas nos dias de trabalho? E nos dias que não se trabalha?");
-var averageByWorkingDay = bikes.GroupBy(b => b.WorkingDay).Select(g => new { WorkingDay = g.Key, Average = g.Sum(b => b.Casual + b.Registred) / g.Count() });
+var averageByWorkingDay = joinBikeDay.GroupBy(g => g.DayObj.IsWorkingDay)
+    .Select(s => new { IsWorkingDay = s.Key, Average = s.Sum(x => x.BikesObj.Casual + x.BikesObj.Registred)});
 foreach (var item in averageByWorkingDay)
 {
-    Console.WriteLine($"Média de aluguéis nos dias de trabalho: {item.Average}");
+    Console.WriteLine($"Dia de Trabalho: {item.IsWorkingDay}, Aluguéis: {item.Average}");
 }
+Console.WriteLine();
+
 
 Console.WriteLine("5. Quais são os picos, tanto de alta quanto de baixa para o aluguel de bicicletas e quais eram as condições (dia de trabalho, condições do tempo, etc) nesses dias.");
 var max = bikes.Max(b => b.Casual + b.Registred);
 var min = bikes.Min(b => b.Casual + b.Registred);
 var maxBike = bikes.First(b => b.Casual + b.Registred == max);
 var minBike = bikes.First(b => b.Casual + b.Registred == min);
-Console.WriteLine($"Maior aluguel: {max} ({maxBike.Date})");
-Console.WriteLine($"Menor aluguel: {min} ({minBike.Date})");
+var maxCondition = days.First(x => x.Day == maxBike.Day);
+var minCondition = days.First(x => x.Day == minBike.Day);
+
+Console.WriteLine($"Maior aluguel: {max} Condições climáticas do dia ({maxCondition.Day}): {maxCondition.Season}, {maxCondition.Weather}, {maxCondition.Temp}");
+Console.WriteLine();
+Console.WriteLine($"Maior aluguel: {min} Condições climáticas do dia ({minCondition.Day}): {minCondition.Season}, {minCondition.Weather}, {minCondition.Temp}");
 
 
 
